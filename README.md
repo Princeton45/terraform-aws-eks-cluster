@@ -16,51 +16,113 @@ I created an automated solution to provision an Amazon EKS cluster using Terrafo
 
 ## Infrastructure Setup
 
-### AWS Configuration
-- Set up AWS credentials and configured necessary IAM roles
-- Established VPC networking with public/private subnets across multiple AZs
+### VPC Configuration
+- I created the VPC required for EKS using the Terraform AWS VPC Module.
 
-[Suggested: Screenshot of AWS VPC configuration/diagram]
+`vpc.tf`
+```hcl
+provider "aws" {
+    region = "us-east-1"
+}
 
-### Terraform Implementation
-- Created Terraform configuration files to define the EKS cluster infrastructure
-- Implemented modular Terraform code structure for maintainability
-- Successfully deployed EKS cluster using Terraform
+variable vpc_cidr_block {}
+variable private_subnet_cidr_blocks {}
+variable public_subnet_cidr_blocks {}
 
-[Suggested: Screenshot of successful Terraform apply output]
+data "aws_availability_zones" "azs" {}
 
-### EKS Cluster Configuration
+module "myapp-vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "5.19.0"
+
+  name = "myapp-vpc"
+  cidr = var.vpc_cidr_block
+
+  /* Will make sure there is one public & private subnet in each AZ */
+
+  private_subnets = var.private_subnet_cidr_blocks
+  public_subnets = var.public_subnet_cidr_blocks
+  
+  /* Distributes the private and public subnets in each AZ (which should be 2 AZs) */
+
+  azs = data.aws_availability_zones.azs.names 
+
+  enable_nat_gateway = true
+
+  /* Single NAT gateway creates a shared common NAT gateway for all the private subnets
+    so their internet traffic can be routed through this shared NAT Gateway */
+  single_nat_gateway = true
+  enable_dns_hostnames = true
+
+  /* These tags are crucial for the AWS Cloud Controller Manager (CCM which is part of the EKS control plane) 
+  to identify which VPC and subnets (along with other resources) belong to the EKS cluster */
+  tags = {
+    "kubernetes.io/cluster/myapp-eks-cluster" = "shared"
+  }
+
+  public_subnet_tags = {
+    "kubernetes.io/cluster/myapp-eks-cluster" = "shared"
+    "kubernetes.io/role/elb" = 1
+  }
+
+  private_subnet_tags = {
+    "kubernetes.io/cluster/myapp-eks-cluster" = "shared"
+    "kubernetes.io/role/internal-elb" = 1
+  }
+
+}
+```
+
+`terraform.tfvars`
+```hcl
+vpc_cidr_block = "10.0.0.0/16"
+private_subnet_cidr_blocks = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24" ]
+public_subnet_cidr_blocks = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
+```
+
+![vpc](https://github.com/Princeton45/terraform-aws-eks-cluster/blob/main/images/vpc.png)
+
+![subnets](https://github.com/Princeton45/terraform-aws-eks-cluster/blob/main/images/subnets.png)
+
+![nat-gateway](https://github.com/Princeton45/terraform-aws-eks-cluster/blob/main/images/nat.png)
+
+
+### EKS Cluster Configuration with EKS Terraform Module
 - Configured worker nodes and node groups
 - Set up cluster networking and security groups
 - Implemented cluster auto-scaling capabilities
 
-[Suggested: Screenshot of EKS cluster dashboard]
+`eks-cluster.tf`
+```hcl
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "20.33.1"
 
-## Key Achievements
-- Automated end-to-end EKS cluster provisioning
-- Implemented infrastructure as code best practices
-- Created reusable Terraform modules
-- Ensured high availability across multiple AZs
+  cluster_name = "myapp-eks-cluster"
+  cluster_version = "1.31"
 
-## Getting Started
+  subnet_ids =  module.myapp-vpc.private_subnets
+  vpc_id = module.myapp-vpc.vpc_id 
 
-### Prerequisites
-- AWS Account
-- Terraform installed
-- AWS CLI configured
-- kubectl installed
+  tags = {
+    environment = "development"
+    application = "myapp"
+  }
 
-### Deployment
-1. Clone the repository
-2. Initialize Terraform
-3. Apply the Terraform configuration
-4. Configure kubectl for cluster access
+   eks_managed_node_groups = {
+    dev = {
+      ami_type       = "AL2023_x86_64_STANDARD"
+      instance_types = ["t3.small"]
 
-## Future Improvements
-- Add monitoring and logging solutions
-- Implement GitOps workflow
-- Add additional security controls
-- Enhance automation capabilities
+      min_size     = 1
+      max_size     = 2
+      desired_size = 2
+    }
+  }
+}
+```
+![eks-cluster](https://github.com/Princeton45/terraform-aws-eks-cluster/blob/main/images/eks-cluster.png)
+
 
 [Suggested: Screenshot of running applications/services in the cluster]
 

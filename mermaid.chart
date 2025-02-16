@@ -1,0 +1,30 @@
+graph LR
+    A[Terraform] -->|applies| B[AWS Provider]
+    B --> C[VPC Module]
+    B --> D[EKS Module]
+    
+    C -->|creates| E[VPC Resources]
+    E -->|creates| F[Public Subnets]
+    E -->|creates| G[Private Subnets]
+    E -->|creates| H[Internet Gateway]
+    E -->|creates| I[NAT Gateway]
+    E -->|creates| J[Route Tables]
+
+    D -->|creates| K[EKS Cluster]
+    K -->|creates| L[Node Groups]
+    K -->|uses| F
+    K -->|uses| G
+    
+    subgraph VPC Network
+        E
+        F
+        G
+        H
+        I
+        J
+    end
+
+    subgraph EKS Resources
+        K
+        L
+    end

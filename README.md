@@ -2,7 +2,7 @@
 
 A demonstration of automating EKS cluster provisioning using Infrastructure as Code with Terraform.
 
-[Suggested: Insert project architecture diagram showing EKS cluster components]
+![diagram](https://github.com/Princeton45/terraform-aws-eks-cluster/blob/main/images/diagram.png)
 
 ## Technologies Used
 - AWS EKS
@@ -122,8 +122,3 @@ module "eks" {
 }
 ```
 ![eks-cluster](https://github.com/Princeton45/terraform-aws-eks-cluster/blob/main/images/eks-cluster.png)
-
-
-[Suggested: Screenshot of running applications/services in the cluster]
-
-<Give claude my terraform file code and have it create a mermaid chart for the project and also include the projects description>

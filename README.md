@@ -122,3 +122,14 @@ module "eks" {
 }
 ```
 ![eks-cluster](https://github.com/Princeton45/terraform-aws-eks-cluster/blob/main/images/eks-cluster.png)
+
+
+### Troubleshooting
+
+Make sure that `AmazonEKSClusterAdminPolicy` access policy is attached to your IAM Principal ARN in
+`Access` tab in the AWS EKS Cluster console.
+
+If not, there will be errors telling you that you aren't able to access the nodes within the cluster,
+resources, can't run commands like `kubectl get pods` etc.
+
+![trouble](https://github.com/Princeton45/terraform-aws-eks-cluster/blob/main/images/trouble.png)

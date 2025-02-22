@@ -132,4 +132,6 @@ Make sure that `AmazonEKSClusterAdminPolicy` access policy is attached to your I
 If not, there will be errors telling you that you aren't able to access the nodes within the cluster,
 resources, can't run commands like `kubectl get pods` etc.
 
+(Could edit the terraform code so it automatically attaches this policy to the caller identity that is creating the cluster in the future)
+
 ![trouble](https://github.com/Princeton45/terraform-aws-eks-cluster/blob/main/images/trouble.png)
